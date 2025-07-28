@@ -1,0 +1,60 @@
+from fastapi import FastAPI, Depends, HTTPException
+from sqlalchemy.orm import Session
+from .database import SessionLocal, User, Cart
+from .models import UserCreate, CartItem, OrderCreate
+from .bitrix import BitrixClient
+import os
+from .utils.slogns import get_random_slogan
+
+app = FastAPI()
+bitrix = BitrixClient(os.getenv("BITRIX_WEBHOOK_URL"))
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+@app.post("/register/")
+async def register_user(user: UserCreate, db: Session = Depends(get_db)):
+    db_user = User(**user.dict())
+    db.add(db_user)
+    db.commit()
+    
+    bitrix_response = bitrix.create_lead({
+        "name": user.full_name,
+        "phone": user.phone,
+        "email": user.email,
+        "city": user.city,
+        "address": user.address,
+    })
+    
+    return {"status": "success", "bitrix_id": bitrix_response}
+
+@app.post("/cart/add/")
+async def add_to_cart(item: CartItem, user_id: int, db: Session = Depends(get_db)):
+    cart = db.query(Cart).filter(Cart.user_id == user_id).first()
+    if not cart:
+        cart = Cart(user_id=user_id, items=[])
+        db.add(cart)
+    
+    cart.items.append(item.dict())
+    db.commit()
+    return {"status": "added"}
+
+@app.post("/order/create/")
+async def create_order(order: OrderCreate, db: Session = Depends(get_db)):
+    cart = db.query(Cart).filter(Cart.user_id == order.user_id).first()
+    if not cart:
+        raise HTTPException(status_code=404, detail="Cart is empty")
+    
+    payment_link = "https://payment-gateway.fake/order123"
+    cart.items = []
+    db.commit()
+    
+    return {"payment_link": payment_link}
+
+@app.get("/slogan/")
+async def get_slogan():
+    return {"slogan": get_random_slogan()}
