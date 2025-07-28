@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>G.T.T.D Shop</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            text-align: center;
+        }
+        .slogan {
+            font-size: 1.5em;
+            color: #3a7bd5;
+            margin-bottom: 20px;
+        }
+        button {
+            background: #3a7bd5;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="slogan" id="slogan">Загрузка...</div>
+    <button onclick="openCart()">🛒 Корзина</button>
+
+    <script>
+        // Получаем случайный слоган с бэкенда
+        fetch('/slogan/')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('slogan').textContent = data.slogan;
+            });
+
+        // Открываем корзину (заглушка)
+        function openCart() {
+            Telegram.WebApp.showAlert("Корзина пока в разработке 🛠️");
+        }
+
+        // Инициализация Telegram WebApp
+        Telegram.WebApp.ready();
+        Telegram.WebApp.expand();  // Раскрываем на весь экран
+    </script>
+</body>
+</html>
